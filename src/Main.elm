@@ -1,5 +1,156 @@
 module Main exposing (..)
 
 import Html exposing (..)
+import Html.Events exposing (..)
+import Html.Attributes exposing (..)
 
-main = text "Hello"
+type AnimalNode = Question String AnimalNode AnimalNode | Animal String
+
+type Msg = 
+    StartGame
+    | RightAnimal
+    | WrongAnimal String
+    | AnimalInput String
+    | DifferenceInput String
+    | EnterNewAnimal String
+    | UpdateAnimalTree String String String
+    | GoAskAbout AnimalNode
+
+type Screen = 
+    Introduction
+    | AskAbout AnimalNode
+    | AskForNewAnimal String
+    | AskForDifference String
+    | RightAnswer
+
+type alias Model = {
+    currentScreen : Screen
+    ,animalTree : AnimalNode
+    ,animalInput : String
+    ,differenceInput : String
+}
+
+startingTree : AnimalNode
+startingTree = Animal "cachorro"
+
+startingScreenModel : Model
+startingScreenModel = 
+    Model 
+    Introduction
+    startingTree 
+    ""
+    ""
+
+main : Program Never Model Msg
+main = beginnerProgram { 
+    model = startingScreenModel
+    ,view = view
+    ,update = update
+ }
+
+introduction : Html Msg
+introduction = div [] [
+    p [] [text "Imagine um animal"]
+    ,button [onClick StartGame] [text "OK"]
+ ]
+
+askIfAnimal : String -> Html Msg
+askIfAnimal animal = div [] [
+    p [] [text ("O animal é "++ animal ++"?")]
+    ,button [onClick RightAnimal] [text "Sim"]
+    ,button [onClick (WrongAnimal animal)] [text "Não"]
+ ]
+
+askIfAnimalDoes : String -> AnimalNode -> AnimalNode -> Html Msg
+askIfAnimalDoes questionText nodeYes nodeNo = div [] [
+    p [] [text ("Hmm... Por acaso o animal "++ questionText ++"?")]
+    ,button [onClick (GoAskAbout nodeYes)] [text "Sim"]
+    ,button [onClick (GoAskAbout nodeNo)] [text "Não"]
+ ]
+
+askAbout : AnimalNode -> Html Msg
+askAbout animalNode = 
+    case animalNode of
+        Question questionText nodeYes nodeNo -> askIfAnimalDoes questionText nodeYes nodeNo
+        Animal animalName -> askIfAnimal animalName
+
+rightAnswer : Html Msg
+rightAnswer = div [] [
+    p [] [text "Acertei!"]
+    ,button [onClick StartGame] [text "Jogar Novamente"]
+ ]
+
+giveUp : String -> String -> Html Msg
+giveUp wrongAnimal currentAnimalInput = div [] [
+    p [] [text "Desisto! Qual era o animal?"]
+    ,input [
+        placeholder "nome do Animal (minúsculo)"
+        ,value currentAnimalInput
+        ,onInput AnimalInput
+    ] []
+    ,button [onClick (EnterNewAnimal wrongAnimal)] [text "OK"]
+ ]
+
+askDifference : String -> String -> String -> Html Msg
+askDifference wrongGuess rightAnimal currentDifference = div [] [
+    p [] [text (wrongGuess++" é diferente de "++rightAnimal++" porque "++rightAnimal)]
+    ,input [
+        placeholder "nada, voa, tem cauda"
+        ,value currentDifference
+        ,onInput DifferenceInput
+    ] []
+    ,button [onClick (UpdateAnimalTree wrongGuess rightAnimal currentDifference)] [text "OK"]
+ ]
+
+insertOnTree : String -> String -> String -> AnimalNode -> AnimalNode
+insertOnTree animalNode newAnimalNode newQuestion oldTree = 
+    case oldTree of
+        Question questionText nodeYes nodeNo -> 
+            Question 
+                questionText 
+                (insertOnTree animalNode newAnimalNode newQuestion nodeYes) 
+                (insertOnTree animalNode newAnimalNode newQuestion nodeNo)
+        Animal animalName -> 
+            if animalName == animalNode then 
+                Question newQuestion (Animal newAnimalNode) (Animal animalNode)
+            else Animal animalName
+
+view : Model -> Html Msg
+view model = 
+    case model.currentScreen of
+        Introduction -> introduction
+        AskAbout animalNode -> askAbout animalNode
+        AskForNewAnimal wrong -> giveUp wrong model.animalInput
+        AskForDifference wrongAnimal -> askDifference wrongAnimal model.animalInput model.differenceInput
+        RightAnswer -> rightAnswer
+
+update : Msg -> Model -> Model
+update message model = 
+    case message of
+        StartGame -> { model |
+            animalInput = ""
+            ,differenceInput = ""
+            ,currentScreen = AskAbout model.animalTree
+        }
+        RightAnimal -> { model |
+            currentScreen = RightAnswer
+        }
+        WrongAnimal wrong -> { model |
+            currentScreen = AskForNewAnimal wrong
+        }
+        AnimalInput animal -> { model |
+            animalInput = animal
+        }
+        DifferenceInput difference -> { model |
+            differenceInput = difference
+        }
+        EnterNewAnimal wrongAnimal -> { model |
+            currentScreen = (AskForDifference wrongAnimal)
+        }
+        UpdateAnimalTree wrongGuess rightAnimal currentDifference -> { model | 
+            currentScreen = Introduction
+            ,animalTree = insertOnTree wrongGuess rightAnimal currentDifference model.animalTree
+        }
+        GoAskAbout node -> { model |
+            currentScreen = AskAbout node
+        }
