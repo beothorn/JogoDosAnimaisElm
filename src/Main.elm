@@ -40,7 +40,9 @@ update message model =
         AnimalInput animal -> { model | animalInput = animal }
         DifferenceInput difference -> { model | differenceInput = difference }
 
-type AnimalNode = Question String AnimalNode AnimalNode | Animal String
+type AnimalNode = 
+    Question String AnimalNode AnimalNode 
+    | Animal String
 
 type Msg = 
     StartGame
@@ -68,15 +70,43 @@ type alias Model = {
 }
 
 startingTree : AnimalNode
-startingTree = Animal "cachorro"
+startingTree = (
+    Question "é carnívoro" 
+        (Question "pode ser animal de estimação" 
+            (Question "late" 
+                (Animal "cachorro")
+                (Animal "gato")
+            )
+            (Question "é aquático" 
+                (Animal "tubarão")
+                (Animal "leão")
+            )
+        )
+        (Question "pode ser animal de estimação" 
+            (Question "é grande" 
+                (Animal "cavalo")
+                (Question "é aquático" 
+                    (Animal "peixe")
+                    (Animal "tartaruga")
+                )
+            )
+            (Question "voa" 
+                (Animal "borboleta")
+                (Question "é aquático" 
+                    (Animal "golfinho")
+                    (Animal "hipopótamo")
+                )
+            )
+        )
+ )
 
 startingScreenModel : Model
 startingScreenModel = 
     Model 
-    Introduction
-    startingTree 
-    ""
-    ""
+        Introduction
+        startingTree 
+        ""
+        ""
 
 introduction : Html Msg
 introduction = div [] [
