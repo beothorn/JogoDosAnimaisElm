@@ -4,10 +4,47 @@ import Html exposing (..)
 import Html.Events exposing (..)
 import Html.Attributes exposing (..)
 
+main : Program Never Model Msg
+main = beginnerProgram { 
+    model = startingScreenModel
+    ,view = view
+    ,update = update
+ }
+
+view : Model -> Html Msg
+view model = 
+    case model.currentScreen of
+        Introduction -> introduction
+        AskAbout animalNode -> askAbout animalNode
+        AskForNewAnimal wrong -> giveUp wrong model.animalInput
+        AskForDifference wrongAnimal -> askDifference wrongAnimal model.animalInput model.differenceInput
+        RightAnswer -> rightAnswer
+
+update : Msg -> Model -> Model
+update message model = 
+    case message of
+        StartGame -> { model |
+            animalInput = ""
+            ,differenceInput = ""
+            ,currentScreen = AskAbout model.animalTree
+        }
+        RestartGame -> changeScreen Introduction model
+        RightAnimal -> changeScreen RightAnswer model
+        WrongAnimal wrong -> changeScreen (AskForNewAnimal wrong) model
+        EnterNewAnimal wrongAnimal -> changeScreen (AskForDifference wrongAnimal) model
+        UpdateAnimalTree wrongGuess rightAnimal currentDifference -> { model | 
+            currentScreen = Introduction
+            ,animalTree = insertOnTree wrongGuess rightAnimal currentDifference model.animalTree
+        }
+        GoAskAbout node -> changeScreen (AskAbout node) model
+        AnimalInput animal -> { model | animalInput = animal }
+        DifferenceInput difference -> { model | differenceInput = difference }
+
 type AnimalNode = Question String AnimalNode AnimalNode | Animal String
 
 type Msg = 
     StartGame
+    | RestartGame
     | RightAnimal
     | WrongAnimal String
     | AnimalInput String
@@ -41,13 +78,6 @@ startingScreenModel =
     ""
     ""
 
-main : Program Never Model Msg
-main = beginnerProgram { 
-    model = startingScreenModel
-    ,view = view
-    ,update = update
- }
-
 introduction : Html Msg
 introduction = div [] [
     p [] [text "Imagine um animal"]
@@ -77,7 +107,7 @@ askAbout animalNode =
 rightAnswer : Html Msg
 rightAnswer = div [] [
     p [] [text "Acertei!"]
-    ,button [onClick StartGame] [text "Jogar Novamente"]
+    ,button [onClick RestartGame] [text "Jogar Novamente"]
  ]
 
 giveUp : String -> String -> Html Msg
@@ -115,42 +145,5 @@ insertOnTree animalNode newAnimalNode newQuestion oldTree =
                 Question newQuestion (Animal newAnimalNode) (Animal animalNode)
             else Animal animalName
 
-view : Model -> Html Msg
-view model = 
-    case model.currentScreen of
-        Introduction -> introduction
-        AskAbout animalNode -> askAbout animalNode
-        AskForNewAnimal wrong -> giveUp wrong model.animalInput
-        AskForDifference wrongAnimal -> askDifference wrongAnimal model.animalInput model.differenceInput
-        RightAnswer -> rightAnswer
-
-update : Msg -> Model -> Model
-update message model = 
-    case message of
-        StartGame -> { model |
-            animalInput = ""
-            ,differenceInput = ""
-            ,currentScreen = AskAbout model.animalTree
-        }
-        RightAnimal -> { model |
-            currentScreen = RightAnswer
-        }
-        WrongAnimal wrong -> { model |
-            currentScreen = AskForNewAnimal wrong
-        }
-        AnimalInput animal -> { model |
-            animalInput = animal
-        }
-        DifferenceInput difference -> { model |
-            differenceInput = difference
-        }
-        EnterNewAnimal wrongAnimal -> { model |
-            currentScreen = (AskForDifference wrongAnimal)
-        }
-        UpdateAnimalTree wrongGuess rightAnimal currentDifference -> { model | 
-            currentScreen = Introduction
-            ,animalTree = insertOnTree wrongGuess rightAnimal currentDifference model.animalTree
-        }
-        GoAskAbout node -> { model |
-            currentScreen = AskAbout node
-        }
+changeScreen : Screen -> Model -> Model
+changeScreen screen model = { model | currentScreen = screen }
