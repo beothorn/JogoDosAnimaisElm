@@ -75,30 +75,21 @@ startingTree = (
         (Question "pode ser animal de estimação" 
             (Question "late" 
                 (Animal "cachorro")
-                (Animal "gato")
-            )
+                (Animal "gato"))
             (Question "é aquático" 
                 (Animal "tubarão")
-                (Animal "leão")
-            )
-        )
+                (Animal "leão")))
         (Question "pode ser animal de estimação" 
             (Question "é grande" 
                 (Animal "cavalo")
                 (Question "é aquático" 
                     (Animal "peixe")
-                    (Animal "tartaruga")
-                )
-            )
+                    (Animal "tartaruga")))
             (Question "voa" 
                 (Animal "borboleta")
                 (Question "é aquático" 
                     (Animal "golfinho")
-                    (Animal "hipopótamo")
-                )
-            )
-        )
- )
+                    (Animal "águia")))))
 
 startingScreenModel : Model
 startingScreenModel = 
